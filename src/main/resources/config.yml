@@ -1,0 +1,31 @@
+# SimpleEconomy Configuration
+# ---------------------------
+# Supports hex colors: use &#rrggbb for hex
+# Example: "Balance: &#00ff00${balance}"
+
+settings:
+  start-balance: 100.0  # Default balance for new players
+  currency-plural: "Dollars"
+  currency-singular: "Dollar"
+
+messages:
+  balance:
+    self: "&7Your balance is: &#54daf4{balance}"
+    other: "&7{player}'s balance is: &#54daf4{balance}"
+  baltop:
+    header: "&eTop 10 Richest Players:"
+    entry: "&6{player} &7- &#54daf4{balance}"
+  pay:
+    sent: "&7You sent &#54daf4{amount} &7to &#54daf4{player}&7."
+    received: "&7You received &#54daf4{amount} &7from &#54daf4{player}&7."
+  eco:
+    given: "&7Gave &#54daf4{amount} &7to &#54daf4{player}&7."
+    taken: "&7Took &#54daf4{amount} &7from &#54daf4{player}&7."
+    set: "&7Set &#54daf4{player}&7's balance to &#54daf4{amount}&7."
+  error:
+    player-not-found: "&cThat player could not be found."
+    invalid-amount: "&cPlease enter a valid, positive number."
+    insufficient-funds: "&cYou do not have enough funds."
+    usage-balance: "&cUsage: /bal [player]"
+    usage-pay: "&cUsage: /pay <player> <amount>"
+    usage-eco: "&cUsage: /eco <give|take|set> <player> <amount>"

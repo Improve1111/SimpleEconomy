@@ -1,0 +1,34 @@
+name: SimpleEconomy
+main: dev.improve.simpleeconomy.SimpleEconomy
+version: 1.0
+api-version: 1.13
+author: Improve
+depend: [Vault]
+description: A simple and lightweight economy plugin.
+commands:
+  simpleeconomy:
+    description: Various Commands
+    usage: /<command> <reload>
+    aliases: [se]
+    permission: simpleeconomy.se
+  balance:
+    description: Check your own or another player's balance.
+    usage: /<command> [player]
+    aliases: [bal]
+  baltop:
+    description: Show the top balances.
+    usage: /<command>
+  pay:
+    description: Pay another player money.
+    usage: /<command> <player> <amount>
+  eco:
+    description: Manage player balances (admin only).
+    usage: /<command> <give|take|set> <player> <amount>
+    permission: simpleeconomy.eco
+permissions:
+  simpleeconomy.se:
+    description: Allows use of the /se command.
+    default: op
+  simpleeconomy.eco:
+    description: Allows use of the /eco command.
+    default: op
