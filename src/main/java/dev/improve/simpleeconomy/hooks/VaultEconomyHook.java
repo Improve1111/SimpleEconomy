@@ -1,5 +1,7 @@
-package dev.improve.simpleeconomy;
+package dev.improve.simpleeconomy.hooks;
 
+import dev.improve.simpleeconomy.SimpleEconomy;
+import dev.improve.simpleeconomy.managers.EconomyManager;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import net.milkbowl.vault.economy.EconomyResponse.ResponseType;
@@ -34,12 +36,12 @@ public class VaultEconomyHook implements Economy {
 
     @Override
     public boolean hasBankSupport() {
-        return false; // This economy plugin doesn't support banks
+        return false;
     }
 
     @Override
     public int fractionalDigits() {
-        return 2; // Allows for two decimal places (cents)
+        return 2;
     }
 
     @Override
@@ -59,26 +61,22 @@ public class VaultEconomyHook implements Economy {
 
     @Override
     public boolean hasAccount(String playerName) {
-        // In our implementation, all players have an account automatically
         OfflinePlayer player = Bukkit.getOfflinePlayer(playerName);
         return player.hasPlayedBefore() || player.isOnline();
     }
 
     @Override
     public boolean hasAccount(OfflinePlayer player) {
-        // In our implementation, all players have an account automatically
         return player.hasPlayedBefore() || player.isOnline();
     }
 
     @Override
     public boolean hasAccount(String playerName, String worldName) {
-        // Our economy is not world-specific
         return hasAccount(playerName);
     }
 
     @Override
     public boolean hasAccount(OfflinePlayer player, String worldName) {
-        // Our economy is not world-specific
         return hasAccount(player);
     }
 
@@ -93,9 +91,7 @@ public class VaultEconomyHook implements Economy {
         return getBalanceSync(player.getUniqueId());
     }
 
-    // Helper method to get balance synchronously but using CompletableFuture to handle async DB operations
     private double getBalanceSync(UUID uuid) {
-        // We need to get the balance asynchronously but return it synchronously
         CompletableFuture<Double> future = new CompletableFuture<>();
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -104,7 +100,7 @@ public class VaultEconomyHook implements Economy {
         });
 
         try {
-            return future.get(); // This will block until the result is available
+            return future.get();
         } catch (InterruptedException | ExecutionException e) {
             plugin.getLogger().severe("Error getting balance: " + e.getMessage());
             return 0.0;
@@ -113,13 +109,11 @@ public class VaultEconomyHook implements Economy {
 
     @Override
     public double getBalance(String playerName, String worldName) {
-        // Our economy is not world-specific
         return getBalance(playerName);
     }
 
     @Override
     public double getBalance(OfflinePlayer player, String worldName) {
-        // Our economy is not world-specific
         return getBalance(player);
     }
 
@@ -135,13 +129,11 @@ public class VaultEconomyHook implements Economy {
 
     @Override
     public boolean has(String playerName, String worldName, double amount) {
-        // Our economy is not world-specific
         return has(playerName, amount);
     }
 
     @Override
     public boolean has(OfflinePlayer player, String worldName, double amount) {
-        // Our economy is not world-specific
         return has(player, amount);
     }
 
@@ -154,7 +146,6 @@ public class VaultEconomyHook implements Economy {
         OfflinePlayer player = Bukkit.getOfflinePlayer(playerName);
         UUID uuid = player.getUniqueId();
 
-        // Handle this operation asynchronously with CompletableFuture
         CompletableFuture<EconomyResponse> future = new CompletableFuture<>();
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -172,7 +163,7 @@ public class VaultEconomyHook implements Economy {
         });
 
         try {
-            return future.get(); // This will block until the result is available
+            return future.get();
         } catch (InterruptedException | ExecutionException e) {
             plugin.getLogger().severe("Error withdrawing funds: " + e.getMessage());
             return new EconomyResponse(0, 0, ResponseType.FAILURE, "Internal error occurred");
@@ -187,7 +178,6 @@ public class VaultEconomyHook implements Economy {
 
         UUID uuid = player.getUniqueId();
 
-        // Handle this operation asynchronously with CompletableFuture
         CompletableFuture<EconomyResponse> future = new CompletableFuture<>();
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -205,7 +195,7 @@ public class VaultEconomyHook implements Economy {
         });
 
         try {
-            return future.get(); // This will block until the result is available
+            return future.get();
         } catch (InterruptedException | ExecutionException e) {
             plugin.getLogger().severe("Error withdrawing funds: " + e.getMessage());
             return new EconomyResponse(0, 0, ResponseType.FAILURE, "Internal error occurred");
@@ -214,13 +204,11 @@ public class VaultEconomyHook implements Economy {
 
     @Override
     public EconomyResponse withdrawPlayer(String playerName, String worldName, double amount) {
-        // Our economy is not world-specific
         return withdrawPlayer(playerName, amount);
     }
 
     @Override
     public EconomyResponse withdrawPlayer(OfflinePlayer player, String worldName, double amount) {
-        // Our economy is not world-specific
         return withdrawPlayer(player, amount);
     }
 
@@ -233,7 +221,6 @@ public class VaultEconomyHook implements Economy {
         OfflinePlayer player = Bukkit.getOfflinePlayer(playerName);
         UUID uuid = player.getUniqueId();
 
-        // Handle this operation asynchronously with CompletableFuture
         CompletableFuture<EconomyResponse> future = new CompletableFuture<>();
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -245,7 +232,7 @@ public class VaultEconomyHook implements Economy {
         });
 
         try {
-            return future.get(); // This will block until the result is available
+            return future.get();
         } catch (InterruptedException | ExecutionException e) {
             plugin.getLogger().severe("Error depositing funds: " + e.getMessage());
             return new EconomyResponse(0, 0, ResponseType.FAILURE, "Internal error occurred");
@@ -260,7 +247,6 @@ public class VaultEconomyHook implements Economy {
 
         UUID uuid = player.getUniqueId();
 
-        // Handle this operation asynchronously with CompletableFuture
         CompletableFuture<EconomyResponse> future = new CompletableFuture<>();
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -272,7 +258,7 @@ public class VaultEconomyHook implements Economy {
         });
 
         try {
-            return future.get(); // This will block until the result is available
+            return future.get();
         } catch (InterruptedException | ExecutionException e) {
             plugin.getLogger().severe("Error depositing funds: " + e.getMessage());
             return new EconomyResponse(0, 0, ResponseType.FAILURE, "Internal error occurred");
@@ -353,25 +339,21 @@ public class VaultEconomyHook implements Economy {
 
     @Override
     public boolean createPlayerAccount(String playerName) {
-        // Accounts are automatically created when accessed
         return true;
     }
 
     @Override
     public boolean createPlayerAccount(OfflinePlayer player) {
-        // Accounts are automatically created when accessed
         return true;
     }
 
     @Override
     public boolean createPlayerAccount(String playerName, String worldName) {
-        // Our economy is not world-specific and accounts are created automatically
         return true;
     }
 
     @Override
     public boolean createPlayerAccount(OfflinePlayer player, String worldName) {
-        // Our economy is not world-specific and accounts are created automatically
         return true;
     }
 }

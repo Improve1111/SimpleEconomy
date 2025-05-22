@@ -1,5 +1,8 @@
-package dev.improve.simpleeconomy;
+package dev.improve.simpleeconomy.commands;
 
+import dev.improve.simpleeconomy.managers.DatabaseManager;
+import dev.improve.simpleeconomy.utils.MessageUtil;
+import dev.improve.simpleeconomy.SimpleEconomy;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;

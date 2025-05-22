@@ -1,5 +1,6 @@
-package dev.improve.simpleeconomy;
+package dev.improve.simpleeconomy.managers;
 
+import dev.improve.simpleeconomy.SimpleEconomy;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 

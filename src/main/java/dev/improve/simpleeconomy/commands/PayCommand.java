@@ -1,5 +1,8 @@
-package dev.improve.simpleeconomy;
+package dev.improve.simpleeconomy.commands;
 
+import dev.improve.simpleeconomy.managers.DatabaseManager;
+import dev.improve.simpleeconomy.utils.MessageUtil;
+import dev.improve.simpleeconomy.SimpleEconomy;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -21,8 +24,7 @@ import static org.bukkit.Bukkit.getScheduler;
 public class PayCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) return false;
-        Player player = (Player) sender;
+        if (!(sender instanceof Player player)) return false;
         MessageUtil msg = SimpleEconomy.getInstance().getMessageUtil();
         DatabaseManager db = SimpleEconomy.getInstance().getDatabaseManager();
 

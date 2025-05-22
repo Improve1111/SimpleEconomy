@@ -1,6 +1,6 @@
-package dev.improve.simpleeconomy;
+package dev.improve.simpleeconomy.commands;
 
-import org.bukkit.ChatColor;
+import dev.improve.simpleeconomy.SimpleEconomy;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;

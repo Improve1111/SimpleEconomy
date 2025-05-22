@@ -1,7 +1,7 @@
-package dev.improve.simpleeconomy;
+package dev.improve.simpleeconomy.managers;
 
+import dev.improve.simpleeconomy.SimpleEconomy;
 import org.bukkit.Bukkit;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;
 import java.util.UUID;

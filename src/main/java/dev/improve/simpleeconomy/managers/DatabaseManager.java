@@ -1,4 +1,6 @@
-package dev.improve.simpleeconomy;
+package dev.improve.simpleeconomy.managers;
+
+import dev.improve.simpleeconomy.SimpleEconomy;
 
 import java.io.File;
 import java.sql.*;

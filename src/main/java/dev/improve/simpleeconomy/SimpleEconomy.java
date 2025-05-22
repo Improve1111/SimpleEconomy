@@ -1,17 +1,13 @@
 package dev.improve.simpleeconomy;
 
+import dev.improve.simpleeconomy.commands.*;
+import dev.improve.simpleeconomy.hooks.VaultEconomyHook;
+import dev.improve.simpleeconomy.managers.DatabaseManager;
+import dev.improve.simpleeconomy.managers.EconomyManager;
+import dev.improve.simpleeconomy.utils.MessageUtil;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
 
 public class SimpleEconomy extends JavaPlugin {
 
@@ -33,10 +29,8 @@ public class SimpleEconomy extends JavaPlugin {
 
         economyManager = new EconomyManager(this, databaseManager);
 
-        // Register commands
         registerCommands();
 
-        // Vault economy hook registration
         if (Bukkit.getPluginManager().getPlugin("Vault") != null) {
             Bukkit.getServicesManager().register(
                     Economy.class,
@@ -51,10 +45,7 @@ public class SimpleEconomy extends JavaPlugin {
     }
 
     @Override
-    public void onDisable() {
-        // Nothing specific to close here for SQLite connection since connection lifecycle handled by DatabaseManager
-        // (Add closing connection if you implement it there)
-    }
+    public void onDisable() {}
 
     private void registerCommands() {
         BalanceCommand balanceCmd = new BalanceCommand();
