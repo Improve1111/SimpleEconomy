@@ -5,9 +5,11 @@ import dev.improve.simpleeconomy.SimpleEconomy;
 import java.io.File;
 import java.sql.*;
 import java.util.*;
+import java.util.function.Consumer;
 
 @SuppressWarnings("CallToPrintStackTrace")
 public class DatabaseManager {
+    private final Map<UUID, Double> balances = new HashMap<>();
     private final SimpleEconomy plugin;
     private Connection connection;
 
@@ -51,6 +53,15 @@ public class DatabaseManager {
             e.printStackTrace();
         }
         return plugin.getConfig().getDouble("settings.start-balance", 0.0);
+    }
+
+    public void getBalanceAsync(UUID uuid, Consumer<Double> callback) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            double balance = getBalance(uuid);
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                callback.accept(balance);
+            });
+        });
     }
 
     public void setBalance(UUID uuid, double amount) {
@@ -165,5 +176,9 @@ public class DatabaseManager {
                 e.printStackTrace();
             }
         }
+    }
+
+    public Map<UUID, Double> getBalances() {
+        return balances;
     }
 }

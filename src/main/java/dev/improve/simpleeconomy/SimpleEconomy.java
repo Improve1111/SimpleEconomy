@@ -1,8 +1,9 @@
 package dev.improve.simpleeconomy;
 
 import dev.improve.simpleeconomy.commands.*;
+import dev.improve.simpleeconomy.hooks.PAPIHook;
 import dev.improve.simpleeconomy.hooks.VaultEconomyHook;
-import dev.improve.simpleeconomy.listeners.PlayerJoinListener;
+import dev.improve.simpleeconomy.listeners.PlayerListener;
 import dev.improve.simpleeconomy.managers.*;
 import dev.improve.simpleeconomy.utils.Config;
 import dev.improve.simpleeconomy.utils.MessageUtil;
@@ -39,9 +40,16 @@ public class SimpleEconomy extends JavaPlugin {
         saveDefaultConfig();
         Config config = new Config(this);
         messageUtil = new MessageUtil(getConfig());
-        getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
 
         registerCommands();
+
+        boolean usingPAPI = getServer().getPluginManager().isPluginEnabled("PlaceholderAPI");
+        if (usingPAPI) {
+            new PAPIHook(this).register();
+            getLogger().info("PlaceholderAPI hook registered.");
+        }
+
     }
 
     @Override
