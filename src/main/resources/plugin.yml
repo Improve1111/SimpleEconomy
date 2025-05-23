@@ -3,7 +3,9 @@ main: dev.improve.simpleeconomy.SimpleEconomy
 version: 1.0
 api-version: 1.13
 author: Improve
-depend: [Vault]
+softdepend:
+  - Vault
+  - PlaceholderAPI
 description: A simple and lightweight economy plugin.
 commands:
   simpleeconomy:
