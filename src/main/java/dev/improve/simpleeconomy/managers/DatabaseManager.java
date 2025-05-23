@@ -71,6 +71,7 @@ public class DatabaseManager {
             ps.setDouble(2, amount);
             ps.setDouble(3, amount);
             ps.executeUpdate();
+            balances.put(uuid, amount);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -136,6 +137,7 @@ public class DatabaseManager {
     }
 
     public void deleteBalance(UUID uuid) {
+        balances.remove(uuid);
         try (PreparedStatement ps = connection.prepareStatement("DELETE FROM balances WHERE uuid = ?")) {
             ps.setString(1, uuid.toString());
             ps.executeUpdate();

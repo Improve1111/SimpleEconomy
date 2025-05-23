@@ -26,7 +26,7 @@ public class PlayerListener implements Listener {
                 databaseManager.setBalance(player.getUniqueId(), Config.DEFAULT_BALANCE);
                 //SimpleEconomy.getInstance().getLogger().info("Created new balance for player: " + player.getName() + " with balance: " + defaultBalance);
             }
-            databaseManager.addBalance(player.getUniqueId(), databaseManager.getBalance(player.getUniqueId()));
+            databaseManager.getBalances().put(player.getUniqueId(), databaseManager.getBalance(player.getUniqueId()));
         });
     }
 

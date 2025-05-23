@@ -44,10 +44,23 @@ public class PAPIHook extends PlaceholderExpansion {
             if (balance == null) {
                 return "0.00";
             }
-            return String.format("%.2f", balance);
+
+            return formatBalance(balance);
         }
 
         return super.onRequest(player, params);
+    }
+
+    private String formatBalance(double balance) {
+        if (balance < 1_000) {
+            return String.format("%.2f", balance);
+        } else if (balance < 1_000_000) {
+            return String.format("%.0fK", balance / 1_000);
+        } else if (balance < 1_000_000_000) {
+            return String.format("%.0fM", balance / 1_000_000);
+        } else {
+            return String.format("%.0fB", balance / 1_000_000_000);
+        }
     }
 
 }
