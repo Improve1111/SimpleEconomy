@@ -3,12 +3,13 @@ package dev.improve.simpleeconomy;
 import dev.improve.simpleeconomy.commands.*;
 import dev.improve.simpleeconomy.hooks.VaultEconomyHook;
 import dev.improve.simpleeconomy.listeners.PlayerJoinListener;
-import dev.improve.simpleeconomy.managers.DatabaseManager;
-import dev.improve.simpleeconomy.managers.EconomyManager;
+import dev.improve.simpleeconomy.managers.*;
+import dev.improve.simpleeconomy.utils.Config;
 import dev.improve.simpleeconomy.utils.MessageUtil;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 public class SimpleEconomy extends JavaPlugin {
 
@@ -17,19 +18,21 @@ public class SimpleEconomy extends JavaPlugin {
     private MessageUtil messageUtil;
     private EconomyManager economyManager;
     private DatabaseManager databaseManager;
+    private Config config;
 
     @Override
     public void onEnable() {
         instance = this;
 
         saveDefaultConfig();
+        this.config = new Config(this);
         messageUtil = new MessageUtil(getConfig());
 
         databaseManager = new DatabaseManager(this);
         databaseManager.setup();
 
         economyManager = new EconomyManager(this, databaseManager);
-        getServer().getPluginManager().registerEvents(new PlayerJoinListener(), this);
+        getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
 
         registerCommands();
 
@@ -49,6 +52,7 @@ public class SimpleEconomy extends JavaPlugin {
     @Override
     public void onDisable() {}
 
+    @SuppressWarnings("DataFlowIssue")
     private void registerCommands() {
         BalanceCommand balanceCmd = new BalanceCommand();
         BalTopCommand baltopCmd = new BalTopCommand();
@@ -66,8 +70,11 @@ public class SimpleEconomy extends JavaPlugin {
         getCommand("eco").setExecutor(ecoCmd);
         getCommand("eco").setTabCompleter(ecoCmd);
 
-        // Register reload command under /simpleeconomy or /secon reload
         getCommand("simpleeconomy").setExecutor(new ReloadCommand());
+    }
+
+    public @NotNull Config getPluginConfig() {
+        return config;
     }
 
     public static SimpleEconomy getInstance() {

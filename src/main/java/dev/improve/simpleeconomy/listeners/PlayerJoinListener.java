@@ -2,6 +2,7 @@ package dev.improve.simpleeconomy.listeners;
 
 import dev.improve.simpleeconomy.SimpleEconomy;
 import dev.improve.simpleeconomy.managers.DatabaseManager;
+import dev.improve.simpleeconomy.utils.Config;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -11,8 +12,8 @@ public class PlayerJoinListener implements Listener {
 
     private final DatabaseManager databaseManager;
 
-    public PlayerJoinListener() {
-        this.databaseManager = SimpleEconomy.getInstance().getDatabaseManager();
+    public PlayerJoinListener(SimpleEconomy plugin) {
+        this.databaseManager = plugin.getDatabaseManager();
     }
 
     @EventHandler
@@ -21,10 +22,9 @@ public class PlayerJoinListener implements Listener {
 
         SimpleEconomy.getInstance().getServer().getScheduler().runTaskAsynchronously(SimpleEconomy.getInstance(), () -> {
             if (!databaseManager.hasBalance(player.getUniqueId())) {
-                double defaultBalance = 100.0;
-                databaseManager.setBalance(player.getUniqueId(), defaultBalance);
+                databaseManager.setBalance(player.getUniqueId(), Config.DEFAULT_BALANCE);
 
-                SimpleEconomy.getInstance().getLogger().info("Created new balance for player: " + player.getName() + " with balance: " + defaultBalance);
+                //SimpleEconomy.getInstance().getLogger().info("Created new balance for player: " + player.getName() + " with balance: " + defaultBalance);
             }
         });
     }
