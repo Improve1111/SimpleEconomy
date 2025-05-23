@@ -30,6 +30,17 @@ public class DatabaseManager {
         }
     }
 
+    public boolean hasBalance(UUID uuid) {
+        try (PreparedStatement ps = connection.prepareStatement("SELECT uuid FROM balances WHERE uuid = ?")) {
+            ps.setString(1, uuid.toString());
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public double getBalance(UUID uuid) {
         try (PreparedStatement ps = connection.prepareStatement("SELECT balance FROM balances WHERE uuid = ?")) {
             ps.setString(1, uuid.toString());
@@ -55,15 +66,34 @@ public class DatabaseManager {
 
     public Map<UUID, Double> getTopBalances(int limit) {
         Map<UUID, Double> top = new LinkedHashMap<>();
-        try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT uuid, balance FROM balances ORDER BY balance DESC LIMIT ?")) {
+        String query = "SELECT uuid, balance FROM balances ORDER BY balance DESC LIMIT ?";
+
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
             ps.setInt(1, limit);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                UUID uuid = UUID.fromString(rs.getString("uuid"));
-                top.put(uuid, rs.getDouble("balance"));
+
+            try (ResultSet rs = ps.executeQuery()) {
+                System.out.println("Executing query: " + query + " with limit: " + limit); // Debug
+
+                int count = 0;
+                while (rs.next()) {
+                    try {
+                        String uuidString = rs.getString("uuid");
+                        double balance = rs.getDouble("balance");
+
+                        System.out.println("Found record: " + uuidString + " = " + balance); // Debug
+
+                        UUID uuid = UUID.fromString(uuidString);
+                        top.put(uuid, balance);
+                        count++;
+                    } catch (IllegalArgumentException e) {
+                        System.err.println("Invalid UUID format: " + rs.getString("uuid"));
+                        continue;
+                    }
+                }
+                System.out.println("Total records found: " + count); // Debug
             }
         } catch (SQLException e) {
+            System.err.println("SQL Error in getTopBalances: " + e.getMessage());
             e.printStackTrace();
         }
         return top;

@@ -2,6 +2,7 @@ package dev.improve.simpleeconomy;
 
 import dev.improve.simpleeconomy.commands.*;
 import dev.improve.simpleeconomy.hooks.VaultEconomyHook;
+import dev.improve.simpleeconomy.listeners.PlayerJoinListener;
 import dev.improve.simpleeconomy.managers.DatabaseManager;
 import dev.improve.simpleeconomy.managers.EconomyManager;
 import dev.improve.simpleeconomy.utils.MessageUtil;
@@ -28,6 +29,7 @@ public class SimpleEconomy extends JavaPlugin {
         databaseManager.setup();
 
         economyManager = new EconomyManager(this, databaseManager);
+        getServer().getPluginManager().registerEvents(new PlayerJoinListener(), this);
 
         registerCommands();
 
