@@ -11,7 +11,6 @@ import org.bukkit.command.CommandSender;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.bukkit.Bukkit.getScheduler;
 
@@ -21,22 +20,30 @@ public class BalTopCommand implements CommandExecutor {
         MessageUtil msg = SimpleEconomy.getInstance().getMessageUtil();
         DatabaseManager db = SimpleEconomy.getInstance().getDatabaseManager();
 
+        sender.sendMessage(msg.getMessage("baltop.loading", "&7Loading baltop data..."));
+
         getScheduler().runTaskAsynchronously(SimpleEconomy.getInstance(), () -> {
             Map<UUID, Double> topBalances = db.getTopBalances(10);
 
             SimpleEconomy.getInstance().getServer().getScheduler().runTask(SimpleEconomy.getInstance(), () -> {
-                sender.sendMessage(msg.getMessage("baltop.header", "&eTop 10 Richest Players:"));
+                sender.sendMessage(msg.getMessage("baltop.header", "&7Top &#54daf410 &7Richest Players:"));
 
-                AtomicInteger position = new AtomicInteger(1);
+                if (topBalances.isEmpty()) {
+                    sender.sendMessage(msg.getMessage("baltop.empty", "&7No player data found."));
+                    return;
+                }
+
+                int position = 1;
                 for (Map.Entry<UUID, Double> entry : topBalances.entrySet()) {
                     OfflinePlayer player = Bukkit.getOfflinePlayer(entry.getKey());
                     String playerName = player.getName() == null ? "Unknown" : player.getName();
                     String balance = String.format("%.2f", entry.getValue());
 
-                    sender.sendMessage(msg.getMessage("baltop.entry", "&6{position}. {player} &7- &#54daf4{balance}")
-                            .replace("{position}", String.valueOf(position.getAndIncrement()))
+                    sender.sendMessage(msg.getMessage("baltop.entry", "&7{position}. &#54daf4{player} &7- &#54daf4${balance}")
+                            .replace("{position}", String.valueOf(position))
                             .replace("{player}", playerName)
                             .replace("{balance}", balance));
+                    position++;
                 }
             });
         });

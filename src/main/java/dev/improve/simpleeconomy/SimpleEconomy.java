@@ -9,37 +9,25 @@ import dev.improve.simpleeconomy.utils.MessageUtil;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.NotNull;
 
 public class SimpleEconomy extends JavaPlugin {
 
     private static SimpleEconomy instance;
 
     private MessageUtil messageUtil;
-    private EconomyManager economyManager;
     private DatabaseManager databaseManager;
-    private Config config;
 
     @Override
     public void onEnable() {
         instance = this;
 
-        saveDefaultConfig();
-        this.config = new Config(this);
-        messageUtil = new MessageUtil(getConfig());
-
         databaseManager = new DatabaseManager(this);
         databaseManager.setup();
-
-        economyManager = new EconomyManager(this, databaseManager);
-        getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
-
-        registerCommands();
 
         if (Bukkit.getPluginManager().getPlugin("Vault") != null) {
             Bukkit.getServicesManager().register(
                     Economy.class,
-                    new VaultEconomyHook(economyManager),
+                    new VaultEconomyHook(this),
                     this,
                     org.bukkit.plugin.ServicePriority.Normal
             );
@@ -47,6 +35,13 @@ public class SimpleEconomy extends JavaPlugin {
         } else {
             getLogger().warning("Vault plugin not found! Vault integration disabled.");
         }
+
+        saveDefaultConfig();
+        Config config = new Config(this);
+        messageUtil = new MessageUtil(getConfig());
+        getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
+
+        registerCommands();
     }
 
     @Override
@@ -73,20 +68,12 @@ public class SimpleEconomy extends JavaPlugin {
         getCommand("simpleeconomy").setExecutor(new ReloadCommand());
     }
 
-    public @NotNull Config getPluginConfig() {
-        return config;
-    }
-
     public static SimpleEconomy getInstance() {
         return instance;
     }
 
     public MessageUtil getMessageUtil() {
         return messageUtil;
-    }
-
-    public EconomyManager getEconomyManager() {
-        return economyManager;
     }
 
     public DatabaseManager getDatabaseManager() {
