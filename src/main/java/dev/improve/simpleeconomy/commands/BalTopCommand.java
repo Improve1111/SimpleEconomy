@@ -2,6 +2,7 @@ package dev.improve.simpleeconomy.commands;
 
 import dev.improve.simpleeconomy.managers.DatabaseManager;
 import dev.improve.simpleeconomy.utils.MessageUtil;
+import dev.improve.simpleeconomy.utils.Config;
 import dev.improve.simpleeconomy.SimpleEconomy;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -15,17 +16,23 @@ import java.util.UUID;
 import static org.bukkit.Bukkit.getScheduler;
 
 public class BalTopCommand implements CommandExecutor {
+
+    private final SimpleEconomy plugin;
+
+    public BalTopCommand(SimpleEconomy plugin) {
+        this.plugin = plugin;
+    }
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        MessageUtil msg = SimpleEconomy.getInstance().getMessageUtil();
-        DatabaseManager db = SimpleEconomy.getInstance().getDatabaseManager();
+        MessageUtil msg = plugin.getMessageUtil();
+        DatabaseManager db = plugin.getDatabaseManager();
 
         sender.sendMessage(msg.getMessage("baltop.loading", "&7Loading baltop data..."));
 
-        getScheduler().runTaskAsynchronously(SimpleEconomy.getInstance(), () -> {
+        getScheduler().runTaskAsynchronously(plugin, () -> {
             Map<UUID, Double> topBalances = db.getTopBalances(10);
 
-            SimpleEconomy.getInstance().getServer().getScheduler().runTask(SimpleEconomy.getInstance(), () -> {
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
                 sender.sendMessage(msg.getMessage("baltop.header", "&7Top &#54daf410 &7Richest Players:"));
 
                 if (topBalances.isEmpty()) {
@@ -37,9 +44,16 @@ public class BalTopCommand implements CommandExecutor {
                 for (Map.Entry<UUID, Double> entry : topBalances.entrySet()) {
                     OfflinePlayer player = Bukkit.getOfflinePlayer(entry.getKey());
                     String playerName = player.getName() == null ? "Unknown" : player.getName();
-                    String balance = String.format("%.2f", entry.getValue());
+                    String template = msg.getMessage("baltop.entry", "&7{position}. &#54daf4{player} &7- &#54daf4{balance}");
+                    String balance = msg.formatCurrency(entry.getValue());
 
-                    sender.sendMessage(msg.getMessage("baltop.entry", "&7{position}. &#54daf4{player} &7- &#54daf4${balance}")
+                    if (template.contains("${balance}")) {
+                        balance = balance.startsWith(Config.CURRENCY_SYMBOL)
+                                ? balance.substring(Config.CURRENCY_SYMBOL.length())
+                                : balance;
+                    }
+
+                    sender.sendMessage(template
                             .replace("{position}", String.valueOf(position))
                             .replace("{player}", playerName)
                             .replace("{balance}", balance));

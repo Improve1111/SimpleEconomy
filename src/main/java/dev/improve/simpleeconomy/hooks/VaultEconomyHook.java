@@ -2,6 +2,8 @@ package dev.improve.simpleeconomy.hooks;
 
 import dev.improve.simpleeconomy.SimpleEconomy;
 import dev.improve.simpleeconomy.managers.DatabaseManager;
+import dev.improve.simpleeconomy.managers.EconomyResult;
+import dev.improve.simpleeconomy.managers.EconomyStatus;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import net.milkbowl.vault.economy.EconomyResponse.ResponseType;
@@ -18,7 +20,7 @@ public class VaultEconomyHook implements Economy {
     private final DatabaseManager databaseManager;
 
     public VaultEconomyHook(SimpleEconomy plugin) {
-        this.plugin = SimpleEconomy.getInstance();
+        this.plugin = plugin;
         this.databaseManager = plugin.getDatabaseManager();
     }
 
@@ -123,35 +125,23 @@ public class VaultEconomyHook implements Economy {
     public EconomyResponse withdrawPlayer(String playerName, double amount) {
         OfflinePlayer player = Bukkit.getOfflinePlayer(playerName);
         UUID uuid = player.getUniqueId();
-        double balance = plugin.getDatabaseManager().getBalance(uuid);
-        if (amount < 0) {
-            return new EconomyResponse(0, getBalance(playerName), ResponseType.FAILURE, "Cannot withdraw negative amount");
+        EconomyResult result = databaseManager.withdraw(uuid, amount);
+        if (!result.success()) {
+            return failureFromStatus(result.status(), getBalance(playerName));
         }
 
-        if (balance < amount) {
-            return new EconomyResponse(0, balance, ResponseType.FAILURE, "Insufficient funds");
-        }
-
-        plugin.getDatabaseManager().setBalance(uuid, balance - amount);
-
-        return new EconomyResponse(amount, getBalance(playerName), ResponseType.SUCCESS, null);
+        return new EconomyResponse(amount, result.resultingBalance(), ResponseType.SUCCESS, null);
     }
 
     @Override
     public EconomyResponse withdrawPlayer(OfflinePlayer player, double amount) {
         UUID uuid = player.getUniqueId();
-        double balance = plugin.getDatabaseManager().getBalance(uuid);
-        if (amount < 0) {
-            return new EconomyResponse(0, getBalance(player), ResponseType.FAILURE, "Cannot withdraw negative amount");
+        EconomyResult result = databaseManager.withdraw(uuid, amount);
+        if (!result.success()) {
+            return failureFromStatus(result.status(), getBalance(player));
         }
 
-        if (balance < amount) {
-            return new EconomyResponse(0, balance, ResponseType.FAILURE, "Insufficient funds");
-        }
-
-        plugin.getDatabaseManager().setBalance(uuid, balance - amount);
-
-        return new EconomyResponse(amount, getBalance(player), ResponseType.SUCCESS, null);
+        return new EconomyResponse(amount, result.resultingBalance(), ResponseType.SUCCESS, null);
     }
 
     @Override
@@ -166,30 +156,27 @@ public class VaultEconomyHook implements Economy {
 
     @Override
     public EconomyResponse depositPlayer(String playerName, double amount) {
-        if (amount < 0) {
-            return new EconomyResponse(0, getBalance(playerName), ResponseType.FAILURE, "Cannot deposit negative amount");
-        }
-
         OfflinePlayer player = Bukkit.getOfflinePlayer(playerName);
         UUID uuid = player.getUniqueId();
 
-        double balance = plugin.getDatabaseManager().getBalance(uuid);
-        plugin.getDatabaseManager().setBalance(uuid, balance + amount);
+        EconomyResult result = databaseManager.deposit(uuid, amount);
+        if (!result.success()) {
+            return failureFromStatus(result.status(), getBalance(playerName));
+        }
 
-        return new EconomyResponse(amount, balance + amount, ResponseType.SUCCESS, null);
+        return new EconomyResponse(amount, result.resultingBalance(), ResponseType.SUCCESS, null);
     }
 
     @Override
     public EconomyResponse depositPlayer(OfflinePlayer player, double amount) {
-        if (amount < 0) {
-            return new EconomyResponse(0, getBalance(player), ResponseType.FAILURE, "Cannot deposit negative amount");
-        }
         UUID uuid = player.getUniqueId();
 
-        double balance = plugin.getDatabaseManager().getBalance(uuid);
-        plugin.getDatabaseManager().setBalance(uuid, balance + amount);
+        EconomyResult result = databaseManager.deposit(uuid, amount);
+        if (!result.success()) {
+            return failureFromStatus(result.status(), getBalance(player));
+        }
 
-        return new EconomyResponse(amount, balance + amount, ResponseType.SUCCESS, null);
+        return new EconomyResponse(amount, result.resultingBalance(), ResponseType.SUCCESS, null);
     }
 
     @Override
@@ -264,21 +251,35 @@ public class VaultEconomyHook implements Economy {
 
     @Override
     public boolean createPlayerAccount(String playerName) {
+        OfflinePlayer player = Bukkit.getOfflinePlayer(playerName);
+        databaseManager.getBalance(player.getUniqueId());
         return true;
     }
 
     @Override
     public boolean createPlayerAccount(OfflinePlayer player) {
+        databaseManager.getBalance(player.getUniqueId());
         return true;
     }
 
     @Override
     public boolean createPlayerAccount(String playerName, String worldName) {
-        return true;
+        return createPlayerAccount(playerName);
     }
 
     @Override
     public boolean createPlayerAccount(OfflinePlayer player, String worldName) {
-        return true;
+        return createPlayerAccount(player);
+    }
+
+    private EconomyResponse failureFromStatus(EconomyStatus status, double balance) {
+        return switch (status) {
+            case INSUFFICIENT_FUNDS -> new EconomyResponse(0, balance, ResponseType.FAILURE, "Insufficient funds");
+            case EXCEEDS_MAX_BALANCE -> new EconomyResponse(0, balance, ResponseType.FAILURE, "Maximum balance exceeded");
+            case BELOW_MIN_BALANCE -> new EconomyResponse(0, balance, ResponseType.FAILURE, "Below minimum balance");
+            case NEGATIVE_AMOUNT, INVALID_AMOUNT -> new EconomyResponse(0, balance, ResponseType.FAILURE, "Invalid amount");
+            case DATABASE_ERROR -> new EconomyResponse(0, balance, ResponseType.FAILURE, "Database error");
+            default -> new EconomyResponse(0, balance, ResponseType.FAILURE, "Transaction failed");
+        };
     }
 }

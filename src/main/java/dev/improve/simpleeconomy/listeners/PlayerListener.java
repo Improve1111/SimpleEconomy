@@ -11,30 +11,23 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 public class PlayerListener implements Listener {
 
+    private final SimpleEconomy plugin;
     private final DatabaseManager databaseManager;
 
     public PlayerListener(SimpleEconomy plugin) {
+        this.plugin = plugin;
         this.databaseManager = plugin.getDatabaseManager();
     }
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-
-        SimpleEconomy.getInstance().getServer().getScheduler().runTaskAsynchronously(SimpleEconomy.getInstance(), () -> {
-            if (!databaseManager.hasBalance(player.getUniqueId())) {
-                databaseManager.setBalance(player.getUniqueId(), Config.DEFAULT_BALANCE);
-                //SimpleEconomy.getInstance().getLogger().info("Created new balance for player: " + player.getName() + " with balance: " + defaultBalance);
-            }
-            databaseManager.getBalances().put(player.getUniqueId(), databaseManager.getBalance(player.getUniqueId()));
-        });
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> databaseManager.getBalance(player.getUniqueId()));
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        SimpleEconomy.getInstance().getServer().getScheduler().runTaskAsynchronously(SimpleEconomy.getInstance(), () -> databaseManager.getBalances().remove(player.getUniqueId()));
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> databaseManager.evictFromCache(player.getUniqueId()));
     }
-
-
 }

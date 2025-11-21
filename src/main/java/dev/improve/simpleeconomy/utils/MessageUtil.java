@@ -1,8 +1,12 @@
 package dev.improve.simpleeconomy.utils;
 
+import dev.improve.simpleeconomy.utils.Config;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,10 +28,14 @@ public class MessageUtil {
     }
 
     public String getMessage(String path, String def) {
-        return colorize(config.getString("messages." + path, def));
+        String message = config.getString("messages." + path, def);
+        return colorize(message);
     }
 
     public String colorize(String input) {
+        if (input == null) {
+            return "";
+        }
         Matcher matcher = hexPattern.matcher(input);
         StringBuffer buffer = new StringBuffer();
         while (matcher.find()) {
@@ -37,6 +45,12 @@ public class MessageUtil {
         }
         matcher.appendTail(buffer);
         return ChatColor.translateAlternateColorCodes('&', buffer.toString());
+    }
+
+    public String formatCurrency(double amount) {
+        DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance(Locale.US);
+        DecimalFormat formatter = new DecimalFormat("#,##0.00", symbols);
+        return Config.CURRENCY_SYMBOL + formatter.format(amount);
     }
 
 }

@@ -32,19 +32,12 @@ public class PAPIHook extends PlaceholderExpansion {
     @Override
     public @Nullable String onRequest(OfflinePlayer player, @NotNull String params) {
         if (params.equalsIgnoreCase("balance")) {
-            Double balance = plugin.getDatabaseManager().getBalances().get(player.getUniqueId());
-            if (balance == null) {
-                return "0";
-            }
+            double balance = plugin.getDatabaseManager().getBalance(player.getUniqueId());
             return String.valueOf(balance);
         }
 
         if (params.equalsIgnoreCase("balance_formatted")) {
-            Double balance = plugin.getDatabaseManager().getBalances().get(player.getUniqueId());
-            if (balance == null) {
-                return "0.00";
-            }
-
+            double balance = plugin.getDatabaseManager().getBalance(player.getUniqueId());
             return formatBalance(balance);
         }
 

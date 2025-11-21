@@ -17,28 +17,37 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.bukkit.Bukkit.getScheduler;
-
 public class BalanceCommand implements CommandExecutor, TabCompleter {
+
+    private final SimpleEconomy plugin;
+
+    public BalanceCommand(SimpleEconomy plugin) {
+        this.plugin = plugin;
+    }
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        MessageUtil msg = SimpleEconomy.getInstance().getMessageUtil();
-        DatabaseManager db = SimpleEconomy.getInstance().getDatabaseManager();
+        MessageUtil msg = plugin.getMessageUtil();
+        DatabaseManager db = plugin.getDatabaseManager();
 
         if (args.length == 0 && sender instanceof Player player) {
-            getScheduler().runTaskAsynchronously(SimpleEconomy.getInstance(), () -> {
+            getScheduler().runTaskAsynchronously(plugin, () -> {
                 double balance = db.getBalance(player.getUniqueId());
-                player.sendMessage(msg.getMessage("balance.self", "&7Your balance is: &#54daf4{balance}")
-                        .replace("{balance}", String.format("%.2f", balance)));
+                Bukkit.getScheduler().runTask(plugin, () -> player.sendMessage(
+                        msg.getMessage("balance.self", "&7Your balance is: &#54daf4{balance}")
+                                .replace("{balance}", msg.formatCurrency(balance))
+                ));
             });
             return true;
         } else if (args.length == 1) {
             OfflinePlayer target = Bukkit.getOfflinePlayer(args[0]);
             if (target.hasPlayedBefore() || target.isOnline()) {
-                getScheduler().runTaskAsynchronously(SimpleEconomy.getInstance(), () -> {
+                getScheduler().runTaskAsynchronously(plugin, () -> {
                     double balance = db.getBalance(target.getUniqueId());
-                    sender.sendMessage(msg.getMessage("balance.other", "&7{player}'s balance is: &#54daf4{balance}")
-                            .replace("{player}", target.getName())
-                            .replace("{balance}", String.format("%.2f", balance)));
+                    Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage(
+                            msg.getMessage("balance.other", "&7{player}'s balance is: &#54daf4{balance}")
+                                    .replace("{player}", target.getName() == null ? "Unknown" : target.getName())
+                                    .replace("{balance}", msg.formatCurrency(balance))
+                    ));
                 });
             } else {
                 sender.sendMessage(msg.getMessage("error.player-not-found", "&cThat player could not be found."));

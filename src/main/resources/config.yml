@@ -5,8 +5,12 @@
 
 settings:
   start-balance: 100.0  # Default balance for new players
+  min-balance: 0.0      # Minimum allowed balance
+  max-balance: 1000000000.0  # Maximum allowed balance (set to -1 to disable)
+  currency-symbol: "$"
   currency-plural: "Dollars"
   currency-singular: "Dollar"
+  save-interval-ticks: 1200 # 60 seconds; set to 0 for immediate writes
 
 messages:
   balance:
@@ -29,6 +33,13 @@ messages:
     player-not-found: "&cThat player could not be found."
     invalid-amount: "&cPlease enter a valid, positive number."
     insufficient-funds: "&cYou do not have enough funds."
+    max-balance: "&cThat transaction would exceed the maximum balance."
+    same-account: "&cYou cannot send money to yourself."
+    console-only: "&cOnly players can use this command."
+    no-permission: "&cYou do not have permission to do that."
+    database: "&cSomething went wrong while processing your transaction. Please try again."
     usage-balance: "&cUsage: /bal [player]"
     usage-pay: "&cUsage: /pay <player> <amount>"
     usage-eco: "&cUsage: /eco <give|take|set> <player> <amount>"
+reload:
+  success: "&7[&e&lSimpleEconomy&7] &aConfiguration reloaded."
