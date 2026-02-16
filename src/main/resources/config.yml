@@ -3,6 +3,19 @@
 # Supports hex colors: use &#rrggbb for hex
 # Example: "Balance: &#00ff00${balance}"
 
+# Database configuration
+# Type: "sqlite" or "mysql"
+database:
+  type: sqlite
+  # MySQL settings (only used if type is mysql)
+  mysql:
+    host: localhost
+    port: 3306
+    database: minecraft
+    username: root
+    password: ""
+    pool-size: 10
+
 settings:
   start-balance: 100.0  # Default balance for new players
   min-balance: 0.0      # Minimum allowed balance

@@ -2,6 +2,7 @@ package dev.improve.simpleeconomy.managers;
 
 import dev.improve.simpleeconomy.SimpleEconomy;
 import dev.improve.simpleeconomy.database.DatabaseProvider;
+import dev.improve.simpleeconomy.database.MySQLProvider;
 import dev.improve.simpleeconomy.database.SQLiteProvider;
 import dev.improve.simpleeconomy.utils.Config;
 import org.bukkit.scheduler.BukkitTask;
@@ -29,7 +30,7 @@ public class DatabaseManager {
 
     public void setup() {
         try {
-            provider = new SQLiteProvider(plugin.getDataFolder());
+            provider = createProvider();
             provider.initialize();
             plugin.getLogger().info("Database connected using " + provider.getName() + ".");
             scheduleAutoSave();
@@ -37,6 +38,20 @@ public class DatabaseManager {
             plugin.getLogger().severe("Failed to initialise database connection: " + ex.getMessage());
             ex.printStackTrace();
         }
+    }
+
+    private DatabaseProvider createProvider() {
+        return switch (Config.DATABASE_TYPE) {
+            case "mysql", "mariadb" -> new MySQLProvider(
+                    Config.MYSQL_HOST,
+                    Config.MYSQL_PORT,
+                    Config.MYSQL_DATABASE,
+                    Config.MYSQL_USERNAME,
+                    Config.MYSQL_PASSWORD,
+                    Config.MYSQL_POOL_SIZE
+            );
+            default -> new SQLiteProvider(plugin.getDataFolder());
+        };
     }
 
     public void reloadSettings() {

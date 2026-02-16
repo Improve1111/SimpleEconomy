@@ -1,11 +1,13 @@
 name: SimpleEconomy
 main: dev.improve.simpleeconomy.SimpleEconomy
-version: 1.1
+version: 1.2
 api-version: 1.13
 author: Improve
 softdepend:
   - Vault
   - PlaceholderAPI
+libraries:
+  - com.zaxxer:HikariCP:5.1.0
 description: A simple and lightweight economy plugin.
 commands:
   simpleeconomy:
