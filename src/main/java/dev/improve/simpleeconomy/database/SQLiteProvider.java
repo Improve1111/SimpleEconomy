@@ -35,12 +35,19 @@ public class SQLiteProvider implements DatabaseProvider {
         connection = DriverManager.getConnection(url);
 
         try (Statement stmt = connection.createStatement()) {
+            // Enable WAL mode for better concurrent read/write performance
+            stmt.execute("PRAGMA journal_mode=WAL");
+            stmt.execute("PRAGMA synchronous=NORMAL");
+
             stmt.execute("""
                     CREATE TABLE IF NOT EXISTS %s (
                         uuid TEXT PRIMARY KEY,
                         balance REAL NOT NULL
                     )
                     """.formatted(TABLE_NAME));
+
+            // Index for faster baltop queries
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_balance ON " + TABLE_NAME + " (balance DESC)");
         }
 
         prepareStatements();

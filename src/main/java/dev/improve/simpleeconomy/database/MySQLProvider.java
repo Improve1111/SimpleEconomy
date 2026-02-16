@@ -33,15 +33,17 @@ public class MySQLProvider implements DatabaseProvider {
     @Override
     public void initialize() throws SQLException {
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&allowPublicKeyRetrieval=true");
+        config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database
+                + "?useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048");
         config.setUsername(username);
         config.setPassword(password);
         config.setMaximumPoolSize(poolSize);
-        config.setMinimumIdle(1);
+        config.setMinimumIdle(Math.min(2, poolSize));
         config.setConnectionTimeout(30000);
         config.setIdleTimeout(600000);
         config.setMaxLifetime(1800000);
         config.setPoolName("SimpleEconomy-Pool");
+        config.setLeakDetectionThreshold(60000);
 
         dataSource = new HikariDataSource(config);
 
@@ -50,7 +52,8 @@ public class MySQLProvider implements DatabaseProvider {
             stmt.execute("""
                     CREATE TABLE IF NOT EXISTS %s (
                         uuid VARCHAR(36) PRIMARY KEY,
-                        balance DOUBLE NOT NULL
+                        balance DOUBLE NOT NULL,
+                        INDEX idx_balance (balance DESC)
                     )
                     """.formatted(TABLE_NAME));
         }
