@@ -1,35 +1,26 @@
 package dev.improve.simpleeconomy.managers;
 
 import dev.improve.simpleeconomy.SimpleEconomy;
+import dev.improve.simpleeconomy.database.DatabaseProvider;
+import dev.improve.simpleeconomy.database.SQLiteProvider;
 import dev.improve.simpleeconomy.utils.Config;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.io.File;
-import java.sql.*;
+import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DatabaseManager {
 
-    private static final String TABLE_NAME = "balances";
-
     private final SimpleEconomy plugin;
     private final Map<UUID, Double> balanceCache = new ConcurrentHashMap<>();
-    private final Object sqlLock = new Object();
+    private final Object dbLock = new Object();
     private final Object pendingLock = new Object();
     private final Map<UUID, Double> pendingWrites = new HashMap<>();
 
-    private Connection connection;
-    private PreparedStatement selectBalanceStatement;
-    private PreparedStatement hasBalanceStatement;
-    private PreparedStatement upsertBalanceStatement;
-    private PreparedStatement deleteBalanceStatement;
-    private PreparedStatement topBalancesStatement;
-    private PreparedStatement totalEconomyStatement;
-    private PreparedStatement playerCountStatement;
+    private DatabaseProvider provider;
     private BukkitTask autoSaveTask;
 
     public DatabaseManager(SimpleEconomy plugin) {
@@ -38,47 +29,14 @@ public class DatabaseManager {
 
     public void setup() {
         try {
-            if (!plugin.getDataFolder().exists() && !plugin.getDataFolder().mkdirs()) {
-                plugin.getLogger().warning("Unable to create plugin data folder. Using working directory for database.");
-            }
-
-            File dbFile = new File(plugin.getDataFolder(), "balances.db");
-            String url = "jdbc:sqlite:" + dbFile.getAbsolutePath();
-            connection = DriverManager.getConnection(url);
-
-            try (Statement stmt = connection.createStatement()) {
-                stmt.execute("""
-                        CREATE TABLE IF NOT EXISTS %s (
-                            uuid TEXT PRIMARY KEY,
-                            balance REAL NOT NULL
-                        )
-                        """.formatted(TABLE_NAME));
-            }
-
-            prepareStatements();
+            provider = new SQLiteProvider(plugin.getDataFolder());
+            provider.initialize();
+            plugin.getLogger().info("Database connected using " + provider.getName() + ".");
             scheduleAutoSave();
         } catch (SQLException ex) {
-            plugin.getLogger().severe("Failed to initialise database connection");
+            plugin.getLogger().severe("Failed to initialise database connection: " + ex.getMessage());
             ex.printStackTrace();
         }
-    }
-
-    private void prepareStatements() throws SQLException {
-        selectBalanceStatement = connection.prepareStatement(
-                "SELECT balance FROM " + TABLE_NAME + " WHERE uuid = ?");
-        hasBalanceStatement = connection.prepareStatement(
-                "SELECT 1 FROM " + TABLE_NAME + " WHERE uuid = ?");
-        upsertBalanceStatement = connection.prepareStatement(
-                "INSERT INTO " + TABLE_NAME + " (uuid, balance) VALUES (?, ?) " +
-                        "ON CONFLICT(uuid) DO UPDATE SET balance = excluded.balance");
-        deleteBalanceStatement = connection.prepareStatement(
-                "DELETE FROM " + TABLE_NAME + " WHERE uuid = ?");
-        topBalancesStatement = connection.prepareStatement(
-                "SELECT uuid, balance FROM " + TABLE_NAME + " ORDER BY balance DESC LIMIT ?");
-        totalEconomyStatement = connection.prepareStatement(
-                "SELECT SUM(balance) as total FROM " + TABLE_NAME);
-        playerCountStatement = connection.prepareStatement(
-                "SELECT COUNT(*) as count FROM " + TABLE_NAME);
     }
 
     public void reloadSettings() {
@@ -90,12 +48,9 @@ public class DatabaseManager {
             return true;
         }
 
-        synchronized (sqlLock) {
+        synchronized (dbLock) {
             try {
-                hasBalanceStatement.setString(1, uuid.toString());
-                try (ResultSet rs = hasBalanceStatement.executeQuery()) {
-                    return rs.next();
-                }
+                return provider.hasBalance(uuid);
             } catch (SQLException ex) {
                 plugin.getLogger().severe("Failed to check balance for " + uuid + ": " + ex.getMessage());
                 return false;
@@ -108,13 +63,11 @@ public class DatabaseManager {
     }
 
     private double loadBalance(UUID uuid) {
-        synchronized (sqlLock) {
+        synchronized (dbLock) {
             try {
-                selectBalanceStatement.setString(1, uuid.toString());
-                try (ResultSet rs = selectBalanceStatement.executeQuery()) {
-                    if (rs.next()) {
-                        return rs.getDouble("balance");
-                    }
+                Double balance = provider.loadBalance(uuid);
+                if (balance != null) {
+                    return balance;
                 }
             } catch (SQLException ex) {
                 plugin.getLogger().severe("Failed to load balance for " + uuid + ": " + ex.getMessage());
@@ -132,7 +85,7 @@ public class DatabaseManager {
         }
 
         double newBalance;
-        synchronized (sqlLock) {
+        synchronized (dbLock) {
             double current = getBalance(uuid);
             newBalance = current + amount;
 
@@ -153,7 +106,7 @@ public class DatabaseManager {
         }
 
         double newBalance;
-        synchronized (sqlLock) {
+        synchronized (dbLock) {
             double current = getBalance(uuid);
             newBalance = current - amount;
 
@@ -177,7 +130,7 @@ public class DatabaseManager {
             return EconomyResult.invalidAmount();
         }
 
-        synchronized (sqlLock) {
+        synchronized (dbLock) {
             double senderBalance = getBalance(from);
             double receiverBalance = getBalance(to);
 
@@ -193,10 +146,7 @@ public class DatabaseManager {
             double newReceiverBalance = receiverBalance + amount;
 
             try {
-                executeInTransaction(() -> {
-                    writeBalanceImmediately(from, newSenderBalance);
-                    writeBalanceImmediately(to, newReceiverBalance);
-                });
+                provider.executeTransfer(from, newSenderBalance, to, newReceiverBalance);
             } catch (SQLException ex) {
                 plugin.getLogger().severe("Failed to execute transactional transfer: " + ex.getMessage());
                 return new EconomyResult(EconomyStatus.DATABASE_ERROR, senderBalance);
@@ -224,7 +174,7 @@ public class DatabaseManager {
             return new EconomyResult(EconomyStatus.EXCEEDS_MAX_BALANCE, amount);
         }
 
-        synchronized (sqlLock) {
+        synchronized (dbLock) {
             balanceCache.put(uuid, amount);
         }
 
@@ -232,44 +182,26 @@ public class DatabaseManager {
         return new EconomyResult(EconomyStatus.SUCCESS, amount);
     }
 
-    private void writeBalanceImmediately(UUID uuid, double amount) throws SQLException {
-        upsertBalanceStatement.setString(1, uuid.toString());
-        upsertBalanceStatement.setDouble(2, amount);
-        upsertBalanceStatement.executeUpdate();
-    }
-
     public Map<UUID, Double> getTopBalances(int limit) {
         flushPendingWrites();
 
-        Map<UUID, Double> top = new LinkedHashMap<>();
-        synchronized (sqlLock) {
+        synchronized (dbLock) {
             try {
-                topBalancesStatement.setInt(1, limit);
-                try (ResultSet rs = topBalancesStatement.executeQuery()) {
-                    while (rs.next()) {
-                        try {
-                            UUID uuid = UUID.fromString(rs.getString("uuid"));
-                            top.put(uuid, rs.getDouble("balance"));
-                        } catch (IllegalArgumentException ignored) {
-                            // Skip malformed UUIDs but keep going
-                        }
-                    }
-                }
+                return provider.getTopBalances(limit);
             } catch (SQLException ex) {
                 plugin.getLogger().severe("Failed to fetch top balances: " + ex.getMessage());
+                return Map.of();
             }
         }
-        return top;
     }
 
     public void deleteBalance(UUID uuid) {
         balanceCache.remove(uuid);
         removePendingWrite(uuid);
 
-        synchronized (sqlLock) {
+        synchronized (dbLock) {
             try {
-                deleteBalanceStatement.setString(1, uuid.toString());
-                deleteBalanceStatement.executeUpdate();
+                provider.deleteBalance(uuid);
             } catch (SQLException ex) {
                 plugin.getLogger().severe("Failed to delete balance for " + uuid + ": " + ex.getMessage());
             }
@@ -283,31 +215,27 @@ public class DatabaseManager {
     public double getTotalEconomy() {
         flushPendingWrites();
 
-        synchronized (sqlLock) {
-            try (ResultSet rs = totalEconomyStatement.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getDouble("total");
-                }
+        synchronized (dbLock) {
+            try {
+                return provider.getTotalBalance();
             } catch (SQLException ex) {
                 plugin.getLogger().severe("Failed to calculate total economy: " + ex.getMessage());
+                return 0.0;
             }
         }
-        return 0.0;
     }
 
     public int getPlayerCount() {
         flushPendingWrites();
 
-        synchronized (sqlLock) {
-            try (ResultSet rs = playerCountStatement.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("count");
-                }
+        synchronized (dbLock) {
+            try {
+                return provider.getPlayerCount();
             } catch (SQLException ex) {
                 plugin.getLogger().severe("Failed to count players: " + ex.getMessage());
+                return 0;
             }
         }
-        return 0;
     }
 
     public void flushPendingWrites() {
@@ -320,13 +248,9 @@ public class DatabaseManager {
             pendingWrites.clear();
         }
 
-        synchronized (sqlLock) {
+        synchronized (dbLock) {
             try {
-                executeInTransaction(() -> {
-                    for (Map.Entry<UUID, Double> entry : snapshot.entrySet()) {
-                        writeBalanceImmediately(entry.getKey(), entry.getValue());
-                    }
-                });
+                provider.saveBalances(snapshot);
             } catch (SQLException ex) {
                 plugin.getLogger().severe("Failed to flush balances: " + ex.getMessage());
                 synchronized (pendingLock) {
@@ -382,57 +306,10 @@ public class DatabaseManager {
         cancelAutoSaveTask();
         flushPendingWrites();
 
-        synchronized (sqlLock) {
-            closeStatement(selectBalanceStatement);
-            closeStatement(hasBalanceStatement);
-            closeStatement(upsertBalanceStatement);
-            closeStatement(deleteBalanceStatement);
-            closeStatement(topBalancesStatement);
-            closeStatement(totalEconomyStatement);
-            closeStatement(playerCountStatement);
-
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException ex) {
-                    plugin.getLogger().severe("Failed to close database connection: " + ex.getMessage());
-                }
+        synchronized (dbLock) {
+            if (provider != null) {
+                provider.shutdown();
             }
         }
-    }
-
-    private void closeStatement(PreparedStatement statement) {
-        if (statement == null) {
-            return;
-        }
-        try {
-            statement.close();
-        } catch (SQLException ex) {
-            plugin.getLogger().severe("Failed to close statement: " + ex.getMessage());
-        }
-    }
-
-    private void executeInTransaction(SQLRunnable action) throws SQLException {
-        boolean previousAutoCommit = connection.getAutoCommit();
-        if (previousAutoCommit) {
-            connection.setAutoCommit(false);
-        }
-
-        try {
-            action.run();
-            connection.commit();
-        } catch (SQLException ex) {
-            connection.rollback();
-            throw ex;
-        } finally {
-            if (previousAutoCommit) {
-                connection.setAutoCommit(true);
-            }
-        }
-    }
-
-    @FunctionalInterface
-    private interface SQLRunnable {
-        void run() throws SQLException;
     }
 }
