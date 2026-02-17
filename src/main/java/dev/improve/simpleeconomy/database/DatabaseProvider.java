@@ -62,6 +62,12 @@ public interface DatabaseProvider {
     int getPlayerCount() throws SQLException;
 
     /**
+     * Get a player's rank based on balance (1 = highest).
+     * @return the rank, or -1 if player not found
+     */
+    int getPlayerRank(UUID uuid) throws SQLException;
+
+    /**
      * Execute a transfer between two accounts atomically.
      */
     void executeTransfer(UUID from, double fromBalance, UUID to, double toBalance) throws SQLException;

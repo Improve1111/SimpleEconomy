@@ -42,6 +42,7 @@ messages:
     given: "&7Gave &#54daf4{amount} &7to &#54daf4{player}&7."
     taken: "&7Took &#54daf4{amount} &7from &#54daf4{player}&7."
     set: "&7Set &#54daf4{player}&7's balance to &#54daf4{amount}&7."
+    reset: "&7Reset &#54daf4{player}&7's balance to &#54daf4{amount}&7."
   error:
     player-not-found: "&cThat player could not be found."
     invalid-amount: "&cPlease enter a valid, positive number."

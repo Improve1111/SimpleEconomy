@@ -31,17 +31,29 @@ public class PAPIHook extends PlaceholderExpansion {
 
     @Override
     public @Nullable String onRequest(OfflinePlayer player, @NotNull String params) {
-        if (params.equalsIgnoreCase("balance")) {
-            double balance = plugin.getDatabaseManager().getBalance(player.getUniqueId());
-            return String.valueOf(balance);
-        }
-
-        if (params.equalsIgnoreCase("balance_formatted")) {
-            double balance = plugin.getDatabaseManager().getBalance(player.getUniqueId());
-            return formatBalance(balance);
-        }
-
-        return super.onRequest(player, params);
+        return switch (params.toLowerCase()) {
+            case "balance" -> {
+                double balance = plugin.getDatabaseManager().getBalance(player.getUniqueId());
+                yield String.valueOf(balance);
+            }
+            case "balance_formatted" -> {
+                double balance = plugin.getDatabaseManager().getBalance(player.getUniqueId());
+                yield formatBalance(balance);
+            }
+            case "rank" -> {
+                int rank = plugin.getDatabaseManager().getPlayerRank(player.getUniqueId());
+                yield rank > 0 ? String.valueOf(rank) : "?";
+            }
+            case "total" -> {
+                double total = plugin.getDatabaseManager().getTotalEconomy();
+                yield formatBalance(total);
+            }
+            case "players" -> {
+                int count = plugin.getDatabaseManager().getPlayerCount();
+                yield String.valueOf(count);
+            }
+            default -> null;
+        };
     }
 
     private String formatBalance(double balance) {

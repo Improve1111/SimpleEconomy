@@ -14,13 +14,13 @@ import org.bukkit.command.TabCompleter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import dev.improve.simpleeconomy.utils.Config;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static org.bukkit.Bukkit.getScheduler;
 
 public class EcoCommand implements CommandExecutor, TabCompleter {
 
@@ -39,12 +39,45 @@ public class EcoCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if (args.length != 3) {
-            sender.sendMessage(msg.getMessage("error.usage-eco", "&cUsage: /eco <give|take|set> <player> <amount>"));
+        String sub = args[0].toLowerCase();
+
+        // Handle reset separately (only 2 args needed)
+        if (sub.equals("reset")) {
+            if (args.length != 2) {
+                sender.sendMessage(msg.getMessage("error.usage-eco", "&cUsage: /eco <give|take|set|reset> <player> [amount]"));
+                return true;
+            }
+
+            OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
+            if (!target.hasPlayedBefore() && !target.isOnline()) {
+                sender.sendMessage(msg.getMessage("error.player-not-found", "&cThat player could not be found."));
+                return true;
+            }
+
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                EconomyResult result = db.setBalance(target.getUniqueId(), Config.DEFAULT_BALANCE);
+
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (!result.success()) {
+                        sender.sendMessage(msg.getMessage(mapStatusToMessage(result.status()), "&cUnable to reset that balance."));
+                        return;
+                    }
+
+                    String targetName = target.getName() == null ? "Unknown" : target.getName();
+                    sender.sendMessage(msg.getMessage("eco.reset", "&7Reset &#54daf4{player}&7's balance to &#54daf4{amount}&7.")
+                            .replace("{player}", targetName)
+                            .replace("{amount}", msg.formatCurrency(Config.DEFAULT_BALANCE)));
+                });
+            });
             return true;
         }
 
-        String sub = args[0].toLowerCase();
+        // Other subcommands require 3 args
+        if (args.length != 3) {
+            sender.sendMessage(msg.getMessage("error.usage-eco", "&cUsage: /eco <give|take|set|reset> <player> [amount]"));
+            return true;
+        }
+
         OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
 
         if (!target.hasPlayedBefore() && !target.isOnline()) {
@@ -60,7 +93,7 @@ public class EcoCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        getScheduler().runTaskAsynchronously(plugin, () -> {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             EconomyResult result;
             switch (sub) {
                 case "give" -> result = db.deposit(target.getUniqueId(), amount);
@@ -68,7 +101,7 @@ public class EcoCommand implements CommandExecutor, TabCompleter {
                 case "set" -> result = db.setBalance(target.getUniqueId(), amount);
                 default -> {
                     Bukkit.getScheduler().runTask(plugin, () ->
-                            sender.sendMessage(msg.getMessage("error.usage-eco", "&cUsage: /eco <give|take|set> <player> <amount>")));
+                            sender.sendMessage(msg.getMessage("error.usage-eco", "&cUsage: /eco <give|take|set|reset> <player> [amount]")));
                     return;
                 }
             }
@@ -106,7 +139,7 @@ public class EcoCommand implements CommandExecutor, TabCompleter {
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
 
         if (args.length == 1) {
-            return List.of("give", "take", "set");
+            return List.of("give", "take", "set", "reset");
         }
 
         if (args.length == 2) {

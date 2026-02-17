@@ -190,6 +190,20 @@ public class SQLiteProvider implements DatabaseProvider {
     }
 
     @Override
+    public int getPlayerRank(UUID uuid) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(
+                "SELECT COUNT(*) + 1 as rank FROM " + TABLE_NAME + " WHERE balance > (SELECT balance FROM " + TABLE_NAME + " WHERE uuid = ?)")) {
+            stmt.setString(1, uuid.toString());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("rank");
+                }
+            }
+        }
+        return -1;
+    }
+
+    @Override
     public void executeTransfer(UUID from, double fromBalance, UUID to, double toBalance) throws SQLException {
         boolean previousAutoCommit = connection.getAutoCommit();
         if (previousAutoCommit) {

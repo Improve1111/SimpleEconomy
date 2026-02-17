@@ -311,6 +311,19 @@ public class DatabaseManager {
         return CompletableFuture.supplyAsync(this::getPlayerCount, asyncExecutor);
     }
 
+    public int getPlayerRank(UUID uuid) {
+        flushPendingWrites();
+
+        synchronized (dbLock) {
+            try {
+                return provider.getPlayerRank(uuid);
+            } catch (SQLException ex) {
+                plugin.getLogger().severe("Failed to get player rank: " + ex.getMessage());
+                return -1;
+            }
+        }
+    }
+
     public void flushPendingWrites() {
         Map<UUID, Double> snapshot;
         synchronized (pendingLock) {

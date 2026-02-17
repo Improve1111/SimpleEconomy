@@ -188,6 +188,21 @@ public class MySQLProvider implements DatabaseProvider {
     }
 
     @Override
+    public int getPlayerRank(UUID uuid) throws SQLException {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                     "SELECT COUNT(*) + 1 as rank FROM " + TABLE_NAME + " WHERE balance > (SELECT balance FROM " + TABLE_NAME + " WHERE uuid = ?)")) {
+            stmt.setString(1, uuid.toString());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("rank");
+                }
+            }
+        }
+        return -1;
+    }
+
+    @Override
     public void executeTransfer(UUID from, double fromBalance, UUID to, double toBalance) throws SQLException {
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
