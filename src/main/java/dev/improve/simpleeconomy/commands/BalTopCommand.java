@@ -13,8 +13,6 @@ import org.bukkit.command.CommandSender;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.bukkit.Bukkit.getScheduler;
-
 public class BalTopCommand implements CommandExecutor {
 
     private final SimpleEconomy plugin;
@@ -22,6 +20,7 @@ public class BalTopCommand implements CommandExecutor {
     public BalTopCommand(SimpleEconomy plugin) {
         this.plugin = plugin;
     }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         MessageUtil msg = plugin.getMessageUtil();
@@ -29,9 +28,8 @@ public class BalTopCommand implements CommandExecutor {
 
         sender.sendMessage(msg.getMessage("baltop.loading", "&7Loading baltop data..."));
 
-        getScheduler().runTaskAsynchronously(plugin, () -> {
-            Map<UUID, Double> topBalances = db.getTopBalances(10);
-
+        db.getTopBalancesAsync(10).thenAccept(topBalances -> {
+            // Return to main thread for sending messages
             plugin.getServer().getScheduler().runTask(plugin, () -> {
                 sender.sendMessage(msg.getMessage("baltop.header", "&7Top &#54daf410 &7Richest Players:"));
 
@@ -61,6 +59,7 @@ public class BalTopCommand implements CommandExecutor {
                 }
             });
         });
+
         return true;
     }
 }

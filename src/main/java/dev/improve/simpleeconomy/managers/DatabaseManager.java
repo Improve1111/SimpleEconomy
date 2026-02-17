@@ -206,6 +206,13 @@ public class DatabaseManager {
         return new EconomyResult(EconomyStatus.SUCCESS, Double.NaN);
     }
 
+    /**
+     * Asynchronously transfers money between two accounts.
+     */
+    public CompletableFuture<EconomyResult> transferAsync(UUID from, UUID to, double amount) {
+        return CompletableFuture.supplyAsync(() -> transfer(from, to, amount), asyncExecutor);
+    }
+
     public EconomyResult setBalance(UUID uuid, double amount) {
         if (Double.isNaN(amount) || Double.isInfinite(amount)) {
             return EconomyResult.invalidAmount();
@@ -240,6 +247,13 @@ public class DatabaseManager {
         }
     }
 
+    /**
+     * Asynchronously fetches top balances.
+     */
+    public CompletableFuture<Map<UUID, Double>> getTopBalancesAsync(int limit) {
+        return CompletableFuture.supplyAsync(() -> getTopBalances(limit), asyncExecutor);
+    }
+
     public void deleteBalance(UUID uuid) {
         balanceCache.remove(uuid);
         removePendingWrite(uuid);
@@ -270,6 +284,13 @@ public class DatabaseManager {
         }
     }
 
+    /**
+     * Asynchronously fetches total economy.
+     */
+    public CompletableFuture<Double> getTotalEconomyAsync() {
+        return CompletableFuture.supplyAsync(this::getTotalEconomy, asyncExecutor);
+    }
+
     public int getPlayerCount() {
         flushPendingWrites();
 
@@ -281,6 +302,13 @@ public class DatabaseManager {
                 return 0;
             }
         }
+    }
+
+    /**
+     * Asynchronously fetches player count.
+     */
+    public CompletableFuture<Integer> getPlayerCountAsync() {
+        return CompletableFuture.supplyAsync(this::getPlayerCount, asyncExecutor);
     }
 
     public void flushPendingWrites() {
