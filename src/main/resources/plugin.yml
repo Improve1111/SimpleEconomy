@@ -1,7 +1,7 @@
 name: SimpleEconomy
 main: dev.improve.simpleeconomy.SimpleEconomy
-version: 1.2
-api-version: 1.13
+version: 1.25
+api-version: "1.20"
 author: Improve
 softdepend:
   - Vault

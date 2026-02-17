@@ -11,7 +11,10 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class DatabaseManager {
 
@@ -23,6 +26,7 @@ public class DatabaseManager {
 
     private DatabaseProvider provider;
     private BukkitTask autoSaveTask;
+    private ExecutorService asyncExecutor;
 
     public DatabaseManager(SimpleEconomy plugin) {
         this.plugin = plugin;
@@ -30,6 +34,11 @@ public class DatabaseManager {
 
     public void setup() {
         try {
+            asyncExecutor = Executors.newFixedThreadPool(2, r -> {
+                Thread t = new Thread(r, "SimpleEconomy-DB");
+                t.setDaemon(true);
+                return t;
+            });
             provider = createProvider();
             provider.initialize();
             plugin.getLogger().info("Database connected using " + provider.getName() + ".");
@@ -74,7 +83,28 @@ public class DatabaseManager {
     }
 
     public double getBalance(UUID uuid) {
-        return balanceCache.computeIfAbsent(uuid, this::loadBalance);
+        Double cached = balanceCache.get(uuid);
+        if (cached != null) {
+            return cached;
+        }
+        // Synchronous fallback for Vault compatibility
+        return loadBalance(uuid);
+    }
+
+    /**
+     * Asynchronously loads and caches a player's balance.
+     * Use this for preloading on join to avoid main thread DB access.
+     */
+    public CompletableFuture<Double> loadBalanceAsync(UUID uuid) {
+        Double cached = balanceCache.get(uuid);
+        if (cached != null) {
+            return CompletableFuture.completedFuture(cached);
+        }
+        return CompletableFuture.supplyAsync(() -> {
+            double balance = loadBalance(uuid);
+            balanceCache.put(uuid, balance);
+            return balance;
+        }, asyncExecutor);
     }
 
     private double loadBalance(UUID uuid) {
@@ -321,10 +351,21 @@ public class DatabaseManager {
         cancelAutoSaveTask();
         flushPendingWrites();
 
+        if (asyncExecutor != null) {
+            asyncExecutor.shutdown();
+        }
+
         synchronized (dbLock) {
             if (provider != null) {
                 provider.shutdown();
             }
         }
+    }
+
+    /**
+     * Get the async executor for database operations.
+     */
+    public ExecutorService getAsyncExecutor() {
+        return asyncExecutor;
     }
 }
