@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static org.bukkit.Bukkit.getScheduler;
-
 public class PayCommand implements CommandExecutor, TabCompleter {
 
     private final SimpleEconomy plugin;
@@ -70,9 +68,8 @@ public class PayCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        getScheduler().runTaskAsynchronously(plugin, () -> {
-            EconomyResult result = db.transfer(player.getUniqueId(), target.getUniqueId(), amount);
-
+        db.transferAsync(player.getUniqueId(), target.getUniqueId(), amount).thenAccept(result -> {
+            // Return to main thread for sending messages
             Bukkit.getScheduler().runTask(plugin, () -> {
                 if (!result.success()) {
                     handleTransferFailure(player, result.status(), msg);
